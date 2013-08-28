@@ -12,6 +12,7 @@ Change log:
 2013-1-25 增加批量读取当前目录下所有txt文件功能 --OEway
 2013-1-25 增加读取声发射DTA文件功能 --OEway
 2013-3-20 增加读取陆老师家的超声F扫描的NDT文件功能 --OEway
+2013-8-28 增加波形检测模块WaveDetect用于对波形进行检测 --OEway
 """
 try:
     from tables import *
