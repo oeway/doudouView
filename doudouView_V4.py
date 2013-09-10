@@ -12,6 +12,7 @@ Change log:
 2013-1-25 增加批量读取当前目录下所有txt文件功能 --OEway
 2013-1-25 增加读取声发射DTA文件功能 --OEway
 2013-3-20 增加读取陆老师家的超声F扫描的NDT文件功能 --OEway
+2013-8-6 增加读取tif文件功能（需要安装pylibtiff包） -- 郑金华
 2013-8-28 增加波形检测模块WaveDetect用于对波形进行检测 --OEway
 """
 try:
@@ -19,18 +20,17 @@ try:
 except:
     print('PyTables not installed! hdf file will not supported')
 import codecs
-from matplotlib import pyplot as plt
+from matplotlib import pyplot as plt  
 from matplotlib import cm
-from matplotlib import mlab as ml
-import numpy as np
-import Tkinter, tkFileDialog
-import string
-import matplotlib.colors as colors
-import webbrowser
-import os
+#from matplotlib import mlab as ml
+import numpy as np 
+import Tkinter, tkFileDialog 
+import string 
+import matplotlib.colors as colors 
+#import webbrowser
+import os 
 from matplotlib.widgets import Cursor, Button
 import matplotlib.pyplot as plt
-import numpy as np
 import pointCalculateV3
 import shutil
 import sazReader
@@ -86,9 +86,9 @@ class doudouView(object):
         self.argsDict['workDir'] = self.dataSet.fpath
         self.argsDict['dataMode'] = self.dataSet.mode
     def genScalarMap(self,Valmin,Valmax):    
-        jet = cmm = plt.get_cmap('jet') 
+        gray = cmm = plt.get_cmap('gray') 
         cNorm  = colors.Normalize(vmin=Valmin,vmax =Valmax)
-        self.scalarMap = cm.ScalarMappable(norm=cNorm, cmap=jet)
+        self.scalarMap = cm.ScalarMappable(norm=cNorm, cmap=gray)
         print self.scalarMap.get_clim()
         #colorVal = scalarMap.to_rgba(0.5)
         #print colorVal
@@ -154,15 +154,15 @@ class doudouView(object):
                         val = annotateDict[k]
                         inx = int((px-self.dataSet.minX)/self.dataSet.stepSize[0])
                         iny = int((py-self.dataSet.minY)/self.dataSet.stepSize[1])
-                        # if inx < self.dataSet.maxX/self.dataSet.stepSize[0] and inx > self.dataSet.minX/self.dataSet.stepSize[0]:
-                        #if self.dataSet.mode == 'h5':
-                        #    if iny%2 == 0 and inx >= 2:
-                            #print iny,inx
-                        #        mapDict[k][iny][inx-2] = val
-                        #    if iny%2 == 1:
-                        #        mapDict[k][iny][inx] = val
-                        #else:
-                        mapDict[k][iny][inx] = val
+                        #if inx < self.dataSet.maxX/self.dataSet.stepSize[0] and inx > self.dataSet.minX/self.dataSet.stepSize[0]:
+                        if self.dataSet.mode == 'h5':
+                            if iny%2 == 0 and inx >= 2:
+                                print iny,inx
+                                mapDict[k][iny][inx] = val
+                            if iny%2 == 1:
+                                mapDict[k][iny][inx - 2] = val
+                        else:
+                            mapDict[k][iny][inx ] = val
                 except:
                     f.write("error,")
                     print('key value error: {0}'.format(repr(k)))
@@ -172,10 +172,10 @@ class doudouView(object):
         f.close()
         self.argsDict['batchMode'] = False
         # colormap
-        cmap = cm.jet
-        settings = pointCalculateV3.settings()
-        if settings.has_key('colorMap'):
-            cmap = settings['colorMap']
+        cmap = cm.gray
+        #settings = pointCalculateV3.settings()
+        #if settings.has_key('colorMap'):
+         #   cmap = settings['colorMap']
         # set NaN values as white
         cmap.set_bad('w')
         for k in mapDict.keys():
@@ -183,17 +183,16 @@ class doudouView(object):
                 self.ScanMapPlot.matshow(mapDict[k],cmap = cmap, interpolation='nearest')
                 self.ScanMapPlot.autoscale(1,'both',1)
                 continue
-            try:
-                if settings.has_key('flip'): 
-                    mapDict[k] = settings['flip'](mapDict[k])
-            except:
-                print('flip error!')
+            #try:
+                #if settings.has_key('flip'): 
+                    #mapDict[k] = settings['flip'](mapDict[k])
+            #except:
+                #print('flip error!')
 
             fig2=plt.figure(self.dataSet.fname+"_"+k)
             fig2.clf()
             ax = fig2.add_subplot(111)
             imm = ax.matshow(mapDict[k],cmap = cmap, interpolation='nearest')
-            
             # xt = np.arange(self.dataSet.minX,self.dataSet.maxX+1,self.dataSet.stepSize[0])
             # xt = map(str,xt)
             # yt = np.arange(self.dataSet.minY,self.dataSet.maxY+1,self.dataSet.stepSize[1])
@@ -207,7 +206,6 @@ class doudouView(object):
             plt.savefig(os.path.join(self.dataSet.fpath,self.dataSet.fname+"_"+k+"_"+".png"),bbox_inches='tight')
             ax.set_axis_on()
             plt.axis('on')
-            
             fig2.colorbar(imm)
             fig2.savefig(os.path.join(self.dataSet.fpath,self.dataSet.fname+"_"+k+".png"))
             fig2.show()
@@ -341,13 +339,13 @@ class doudouView(object):
         #t = np.arange(offset* deepthStep ,(offset+length)*deepthStep,deepthStep)[:len(dataset)]
         p = np.arange(len(dataset))
         #print p,t
-        timeStep = 1.0/100000000
+        timeStep = 1.0/1000000000
         self.waveFormPlot.plot(p,dataset,picker = 5,label='waveform')
         self.fig.canvas.mpl_connect('pick_event', self.onpick)
     def shwoWaveformFft(self,mode):
         self.waveFormFFTPlot.cla()
         xlims = self.waveFormPlot.get_xlim()
-        timeStep = 1.0/100000000
+        timeStep = 1.0/1000000000
         dataset,st = self.dataSet.getWaveform(self.currentPos)
         self.argsDict['label'] = st
         if dataset == None:
@@ -355,13 +353,13 @@ class doudouView(object):
         l = len(dataset)
         d = max(0,xlims[0])
         u = min(l-1,xlims[1])
-        #print d,u
+        print xlims,d,u
         dataset = dataset[int(d):int(u)]
         if mode == 'fft':
             sp = np.fft.fft((dataset*np.hanning((int(u)-int(d))))/np.mean(dataset))
             freq = np.fft.fftfreq(len(dataset),d = timeStep)
-            x = freq[1:len(dataset)/2]
-            y = np.abs(sp)[1:len(dataset)/2]
+            x = freq[1:len(dataset)]
+            y = np.abs(sp)[1:len(dataset)]
             mx = np.argmax(y)
             
             try:
@@ -371,7 +369,7 @@ class doudouView(object):
             #plt.plot(label = "$sin(x)$",color="red",linewidth=2)
             self.waveFormFFTPlot.plot(x, y)
         if mode == 'sfft':
-            self.waveFormFFTPlot.specgram(dataset, NFFT=64, Fs=100000000, noverlap=16)
+            self.waveFormFFTPlot.specgram(dataset, NFFT=1024, Fs=1000000000, noverlap=1000)
         plt.draw()
 class DataSet():
     stepSize = [1.0,1.0]
@@ -386,6 +384,7 @@ class DataSet():
     saz = None
     h5file = None
     ndt = None
+    tif = None
     width = 0
     height = 0
     def __init__(self):
@@ -466,6 +465,7 @@ class DataSet():
                 self.yCount = self.height
                 mat = prng.randint(0, 255, size=self.yCount*self.xCount)
                 self.imgMat = mat.reshape((self.yCount,self.xCount))
+                print self.imgMat
             elif '.dta' in self.filePath.lower():
                 self.dta = dtaReader.dtaReader()
                 self.dta.open(self.filePath)
@@ -478,6 +478,32 @@ class DataSet():
                 self.mode = 'dta'
                 mat = prng.randint(0, 255, size=self.yCount*self.xCount)
                 self.imgMat = mat.reshape((self.yCount,self.xCount))
+            elif '.tif' in self.filePath.lower():
+                self.mode = 'tif'
+                from libtiff import TIFF
+                root = self.fpath
+                pattern = "*.tif"
+                self.tif = TIFF.open(self.filePath) 
+                self.page = list(self.tif.iter_images())
+                self.width = len(self.page)
+                self.height = self.tif.GetField("ImageLength")
+                self.xCount = self.width
+                self.yCount = self.height
+                mat = prng.randint(0, 255, size=self.yCount*self.xCount)
+                self.imgMat = mat.reshape((self.yCount,self.xCount))
+                #print self.imgMat,self.xCount,self.yCount
+                # images = self.tif.asarray()
+                # Z = np.zeros((images.shape[0],images.shape[1]))
+                # Z[:,:] = np.nan
+                # print Z.shape
+                # for page in range(0,images.shape[0]-1):
+                    # image = self.tif[page].asarray()
+                    # for i in range(0,images.shape[1]-1):x
+                        # a =  image[i,:]
+                        # max =a[a.argmax()]
+                        # Z[page][i] = max
+                #plt.matshow(Z) 
+                #plt.show()
         except:
             traceback.print_exc()
             print("mode error!")
@@ -489,6 +515,8 @@ class DataSet():
         if self.mode == 'h5':
             return  iter(self.cordTable.iterkeys())
         if self.mode == 'txt':
+            return  iter(self.cordTable.iterkeys()) 
+        if self.mode == 'txt':
             return  iter(self.cordTable.iterkeys())            
         elif self.mode == 'saz':
             return self
@@ -496,7 +524,7 @@ class DataSet():
             return self
         elif self.mode == 'dta':
             return self
-        
+
         else:
             return self
     def next(self):
@@ -533,7 +561,7 @@ class DataSet():
             if self.mode == 'h5':
                 cor = (cord[0],cord[1])
                 if self.cordTable.has_key(cor):
-                    #print self.cordTable[cor]
+                #print self.cordTable[cor]
                     return self.group._v_children[self.cordTable[cor]][:],self.fname+": "+self.cordTable[cor]
                 else:
                     return None,"Not Found"
@@ -557,7 +585,15 @@ class DataSet():
                 except:
                     traceback.print_exc()
                     return None,"Not Found"
-                    
+            elif self.mode == 'tif':  
+                wav = self.page[cord[0]][cord[1],:]
+                #print wav[700:750]
+                wav = (wav.astype(np.float)-32768)/256
+                #print wav.dtype,wav[700:750]
+                if wav is None:
+                    return None,"Not Found"
+                else:
+                    return np.array(wav),"%s:%d %d"%(self.fname,cord[0],cord[1])        
             elif self.mode == 'txt':
                 if self.cordTable.has_key((cord[0],cord[1])):
                     try:
